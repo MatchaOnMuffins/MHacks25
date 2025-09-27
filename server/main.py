@@ -3,7 +3,6 @@ import uvicorn
 import sys
 import os
 
-# Add the server directory to Python path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import processors
