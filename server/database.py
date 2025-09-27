@@ -3,7 +3,8 @@ import os
 import time
 from contextlib import contextmanager
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "feedback.db")
+os.makedirs("database", exist_ok=True)
+DB_PATH = "database/feedback.db"
 
 def init_database():
     """Initialize the database and create the feedback table if it doesn't exist"""
