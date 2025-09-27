@@ -35,3 +35,8 @@ class SuccessResponse(BaseModel):
     """Generic success response model"""
     message: str
     timestamp: datetime = Field(default_factory=datetime.now)
+
+class ReportFeedbackResponse(BaseModel):
+    """Response model for feedback report endpoint"""
+    message: str
+    last_updated: int 

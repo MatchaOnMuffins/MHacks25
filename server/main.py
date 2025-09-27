@@ -3,6 +3,10 @@ import uvicorn
 import sys
 import os
 
+from dateutil import parser
+from datetime import datetime
+import database
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import processors
@@ -10,7 +14,8 @@ from models import (
     TextUploadRequest, 
     TextUploadResponse, 
     ImageUploadResponse, 
-    ErrorResponse
+    ErrorResponse,
+    ReportFeedbackResponse,
 )
 
 
@@ -48,6 +53,30 @@ async def upload_image(image: UploadFile = File(...)):
             status_code=500,
             detail=ErrorResponse(
                 message="Error processing image",
+                error=str(e)
+            ).model_dump()
+        )
+
+@app.get("/feedback/report")
+async def report_feedback():
+    try:
+        recent_feedback = database.get_most_recent_entry()
+        print(recent_feedback)
+        if recent_feedback is None:
+            return ReportFeedbackResponse(
+                message="",
+                last_updated=0
+            )
+
+        return ReportFeedbackResponse(
+            message=recent_feedback[0],
+            last_updated=int(parser.parse(recent_feedback[1]).timestamp())
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                message="Error reporting feedback",
                 error=str(e)
             ).model_dump()
         )
