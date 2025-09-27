@@ -3,8 +3,6 @@ import uvicorn
 import sys
 import os
 
-from dateutil import parser
-from datetime import datetime
 import database
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -70,7 +68,7 @@ async def report_feedback():
 
         return ReportFeedbackResponse(
             message=recent_feedback[0],
-            last_updated=int(parser.parse(recent_feedback[1]).timestamp())
+            last_updated=int(recent_feedback[1])
         )
     except Exception as e:
         raise HTTPException(
