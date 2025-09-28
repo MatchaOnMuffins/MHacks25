@@ -12,6 +12,9 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 import database
 
+# Initialize database when the application starts
+database.init_database()
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import processors

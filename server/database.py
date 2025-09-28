@@ -1,53 +1,111 @@
-import sqlite3
 import os
 import time
 from contextlib import contextmanager
+from sqlalchemy import create_engine, Column, Integer, String, Text, MetaData, Table
+from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.exc import SQLAlchemyError
+from typing import Optional, Tuple
+import pymysql
 
-os.makedirs("database", exist_ok=True)
-DB_PATH = "database/feedback.db"
+# Database configuration
+DB_HOST = os.getenv("DB_HOST", "")
+DB_PORT = int(os.getenv("DB_PORT", "3306"))
+DB_NAME = os.getenv("DB_NAME", "feedback_db")
+DB_USER = os.getenv("DB_USER", "root")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+
+# Create database URL
+DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+# Create SQLAlchemy engine with connection timeout settings
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=300,
+    pool_timeout=20,
+    pool_size=5,
+    max_overflow=10,
+    connect_args={
+        "connect_timeout": 10,
+        "read_timeout": 10,
+        "write_timeout": 10,
+    },
+    echo=False
+)
+
+# Create session factory
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Create declarative base
+Base = declarative_base()
+
+class Feedback(Base):
+    """Feedback table model"""
+    __tablename__ = "feedback"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    feedback = Column(Text, nullable=False)
+    timestamp = Column(Integer, nullable=False)
 
 def init_database():
     """Initialize the database and create the feedback table if it doesn't exist"""
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS feedback (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                feedback TEXT NOT NULL,
-                timestamp INTEGER NOT NULL
-            )
-        """)
-        conn.commit()
+    try:
+        # Create all tables
+        Base.metadata.create_all(bind=engine)
+        print(f"Database initialized successfully at {DB_HOST}")
+        return True
+    except SQLAlchemyError as e:
+        print(f"Error initializing database: {e}")
+        print("Please ensure:")
+        print("1. MySQL server is running and accessible")
+        print("2. Database credentials are correct (set via environment variables)")
+        print("3. Database 'feedback_db' exists on the MySQL server")
+        print("4. Network connectivity to the MySQL server is available")
+        return False
 
 @contextmanager
 def get_db_connection():
-    """Context manager for database connections"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    """Context manager for database sessions"""
+    session = SessionLocal()
     try:
-        yield conn
+        yield session
+    except Exception as e:
+        session.rollback()
+        raise
     finally:
-        conn.close()
+        session.close()
 
 def add_entry(feedback_text: str) -> int:
     """Add a new entry to the database"""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO feedback (feedback, timestamp) VALUES (?, ?)",
-            (feedback_text, int(time.time()))
-        )
-        conn.commit()
-        return cursor.lastrowid
-from typing import Optional, Tuple
+    try:
+        with get_db_connection() as session:
+            feedback_entry = Feedback(
+                feedback=feedback_text,
+                timestamp=int(time.time())
+            )
+            session.add(feedback_entry)
+            session.commit()
+            session.refresh(feedback_entry)
+            return feedback_entry.id
+    except SQLAlchemyError as e:
+        print(f"Error adding entry: {e}")
+        raise
 
 def get_most_recent_entry() -> Optional[Tuple[str, int]]:
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, feedback, timestamp FROM feedback ORDER BY timestamp DESC LIMIT 1")
-        row = cursor.fetchone()
-        if row is None:
-            return None
-        return (row["feedback"], row["timestamp"])
+    """Get the most recent feedback entry"""
+    try:
+        with get_db_connection() as session:
+            feedback_entry = session.query(Feedback).order_by(
+                Feedback.timestamp.desc()
+            ).first()
+            
+            if feedback_entry is None:
+                return None
+            
+            return (feedback_entry.feedback, feedback_entry.timestamp)
+    except SQLAlchemyError as e:
+        print(f"Error getting most recent entry: {e}")
+        raise
 
-init_database()
+# Note: Call init_database() explicitly when you're ready to connect
+# init_database()
