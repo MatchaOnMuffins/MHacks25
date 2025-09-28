@@ -42,6 +42,7 @@ class ReportFeedbackResponse(BaseModel):
     """Response model for feedback report endpoint"""
     message: str
     last_updated: int 
+    details: str
 
 class VoiceUploadRequest(BaseModel):
     """Request model for voice upload endpoint"""
