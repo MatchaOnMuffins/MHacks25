@@ -8,13 +8,16 @@ Rubric:
 - pauses: frequency and appropriateness
 - volume_variance: variation in loudness
 
+
+CURRENT SPEAKING SPEED: {speed}
+
 You MUST be as concise as possible. Be specific and to the point.
 
 Output JSON ONLY:
 
 {{
   "rubric_scores": {{
-    "pace": {speed},
+    "pace": <score 0-1>,
     "pauses": <score 0-1>,
     "volume_variance": <score 0-1>
   }},
