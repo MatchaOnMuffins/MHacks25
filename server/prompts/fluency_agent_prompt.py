@@ -8,6 +8,8 @@ Output **ONLY JSON** with the following structure, using keys exactly as shown:
 
 Rubric scores must be floats between 0.0 and 1.0.
 
+You MUST be as concise as possible. Be specific and to the point.
+
 {{
   "filler_words": 0,0
   "rubric_scores": {{

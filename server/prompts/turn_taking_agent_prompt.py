@@ -6,6 +6,8 @@ Rubric:
 - interruption_ratio: Frequency of interruptions
 - speaking_share: Share of speaking time for each speaker
 
+You MUST be as concise as possible. Be specific and to the point.
+
 Output JSON ONLY:
 
 {{

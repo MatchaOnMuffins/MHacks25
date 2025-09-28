@@ -6,6 +6,8 @@ Rubric:
 - answered_question: Did the speaker answer the question clearly?
 - rambling: Does the speaker go off-topic or ramble?
 
+You MUST be as concise as possible. Be specific and to the point.
+
 Output JSON ONLY:
 
 {{

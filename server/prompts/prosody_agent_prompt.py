@@ -7,6 +7,8 @@ Rubric:
 - pauses: frequency and appropriateness
 - volume_variance: variation in loudness
 
+You MUST be as concise as possible. Be specific and to the point.
+
 Output JSON ONLY:
 
 {{

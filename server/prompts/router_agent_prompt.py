@@ -2,6 +2,8 @@ def router_agent_prompt(text, categories):
     return f"""
 You are a router agent responsible for dispatching your subagents, each of which is tied to a category out of: {categories}.
 
+You MUST be as concise as possible. Be specific and to the point.
+
 Your task:
 1. Carefully read the input text: "{text}".
 2. For each category, decide if it is present in the text:

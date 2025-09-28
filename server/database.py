@@ -44,8 +44,10 @@ class Feedback(Base):
     __tablename__ = "feedback"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
+    intermediate_feedbacks = Column(Text, nullable=True)
     feedback = Column(Text, nullable=False)
     timestamp = Column(Integer, nullable=False)
+    time_taken = Column(Integer, nullable=True)
 
 def init_database():
     """Initialize the database and create the feedback table if it doesn't exist"""
@@ -75,13 +77,15 @@ def get_db_connection():
     finally:
         session.close()
 
-def add_entry(feedback_text: str) -> int:
+def add_entry(feedback_text: str, intermediate_feedbacks: str = None, time_taken: int = None) -> int:
     """Add a new entry to the database"""
     try:
         with get_db_connection() as session:
             feedback_entry = Feedback(
                 feedback=feedback_text,
-                timestamp=int(time.time())
+                intermediate_feedbacks=intermediate_feedbacks,
+                timestamp=int(time.time()),
+                time_taken=time_taken
             )
             session.add(feedback_entry)
             session.commit()
@@ -91,7 +95,7 @@ def add_entry(feedback_text: str) -> int:
         print(f"Error adding entry: {e}")
         raise
 
-def get_most_recent_entry() -> Optional[Tuple[str, int]]:
+def get_most_recent_entry() -> Optional[Tuple[str, int, str, int]]:
     """Get the most recent feedback entry"""
     try:
         with get_db_connection() as session:
@@ -102,10 +106,7 @@ def get_most_recent_entry() -> Optional[Tuple[str, int]]:
             if feedback_entry is None:
                 return None
             
-            return (feedback_entry.feedback, feedback_entry.timestamp)
+            return (feedback_entry.feedback, feedback_entry.timestamp, feedback_entry.intermediate_feedbacks, feedback_entry.time_taken)
     except SQLAlchemyError as e:
         print(f"Error getting most recent entry: {e}")
         raise
-
-# Note: Call init_database() explicitly when you're ready to connect
-# init_database()

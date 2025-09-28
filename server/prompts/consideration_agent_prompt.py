@@ -2,6 +2,9 @@ def consideration_agent_prompt(text):
     return """
 You are an Empathy/Politeness sub-agent. Analyze the text and evaluate:
 
+
+You MUST be as concise as possible. Be specific and to the point.
+
 Rubric:
 - hedging: Does the speaker hedge statements (e.g., "maybe", "I think")?
 - acknowledgment: Does the speaker acknowledge others appropriately?
