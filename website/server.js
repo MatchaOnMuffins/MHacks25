@@ -1,5 +1,5 @@
 const express = require("express");
-const mysql = require("mysql2/promise");
+const mysql = require("mysql2");
 const cors = require("cors");
 
 const app = express();
@@ -8,14 +8,17 @@ app.use(express.json());
 
 // --- MySQL Connection ---
 const pool = mysql.createPool({
-  host: "34.56.161.151",
-  user: "root",     
-  password: 's1Ii4\\4+UJlL;R\\R',
-  database: "feedback_db",
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 });
+
+module.exports = pool;
+
 
 // --- Get past conversations ---
 app.get("/api/feedback", async (req, res) => {
