@@ -9,7 +9,6 @@ import os
 
 from typing import Literal, Dict
 
-
 # --- Load API key ---
 load_dotenv(".env")
 api_key = os.getenv("GEMINI_API_KEY")
@@ -59,7 +58,6 @@ class SubAgentReport(BaseModel):
 
 class SynthesizerOutput(BaseModel):
     summary: str
-    total_score: int
 
 class FluencyOutput(BaseModel):
     filler_words: float = Field(..., ge=0.0, le=1.0, description="Magnitude of filler words like 'um', 'uh', 'like'")
@@ -227,7 +225,7 @@ async def run_sub_agent(task: SubAgentTask) -> SubAgentReport:
 # --- 3. Final Synthesizer ---
 async def final_synthesizer(input_text: str, reports: List[SubAgentReport]) -> SynthesizerOutput:
     reports_json = json.dumps([r.dict() for r in reports], indent=2)
-    system_prompt = "You are the final synthesizer agent. Combine all sub-agent reports into one coherent summary highlighting insights. Also give the average of all the scores."
+    system_prompt = "You are the final synthesizer agent. Combine all sub-agent reports into one coherent summary highlighting insights."
 
     structured_llm = llm.with_structured_output(SynthesizerOutput)
     messages = [SystemMessage(content=system_prompt),
@@ -238,15 +236,15 @@ async def final_synthesizer(input_text: str, reports: List[SubAgentReport]) -> S
         return output
     except ValidationError as e:
         print("Synthesizer parsing error:", e)
-        return SynthesizerOutput(summary="Failed to synthesize final answer.", total_score=0.0)
+        return SynthesizerOutput(summary="Failed to synthesize final answer.")
 
 # --- 4. Workflow ---
 async def run_workflow(input_text: str):
     router_context = await main_agent(input_text)
     sub_agent_tasks = [run_sub_agent(task) for task in router_context.subagents_to_call]
     reports = await asyncio.gather(*sub_agent_tasks)
-    final_summary, total_score = await final_synthesizer(input_text, reports)
-    return {"sub_agent_reports":[r.dict() for r in reports], "final_answer": final_summary.summary, "total_score": total_score}
+    final_summary = await final_synthesizer(input_text, reports)
+    return {"sub_agent_reports":[r.dict() for r in reports], "final_answer": final_summary.summary}
 
 # --- 5. EX Usage ---
 async def main():
