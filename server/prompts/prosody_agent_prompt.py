@@ -1,5 +1,5 @@
 def prosody_agent_prompt(text):
-  speed = text.split()/5
+  speed = len(text.split()) / 5
   return f"""
 You are a Prosody sub-agent. Analyze the text and evaluate:
 
