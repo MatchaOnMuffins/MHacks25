@@ -4,3 +4,5 @@ langchain
 langchain-google-genai
 pymysql
 sqlalchemy
+deepgram-sdk
+python-dotenv

@@ -94,7 +94,7 @@ async def upload_text(request: TextUploadRequest):
     authenticate_request(request.secret_key)
     
     try:
-        asyncio.create_task(processors.process_text(request.text))
+        asyncio.create_task(processors.process_text(request.text, request.timestamp))
         return TextUploadResponse(
             message="Text uploaded successfully",
             text_length=len(request.text)
