@@ -158,6 +158,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+servers/.env
 
 # Spyder project settings
 .spyderproject
@@ -218,3 +219,5 @@ __marimo__/
 .streamlit/secrets.toml
 
 *.db
+
+website/
