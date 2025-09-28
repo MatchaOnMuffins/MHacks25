@@ -13,7 +13,7 @@ Output JSON ONLY:
 {{
   "rubric_scores": {{
     "interruption_ratio": <score 0-1>,
-    "speaking_share": <score 0-1>
+    "speaking_share": <score 0-1>,
   }},
   "what_went_right": "<summary>",
   "what_went_wrong": "<summary>",

@@ -62,7 +62,7 @@ class SynthesizerOutput(BaseModel):
     total_score: int
 
 class FluencyOutput(BaseModel):
-    filler_words: float = Field(..., ge=0.0, le=1.0, description="Magnitude of filler words like 'um', 'uh', 'like'")
+    filler_words: float = Field(..., ge=0.0, le=1.0, description="Magnitude of filler words like 'um', 'uh', 'like' in comparision to how many words are in the text")
     run_ons: float = Field(..., ge=0.0, le=1.0, description="Magnitude of run-on sentences or lack of clarity")
     wpm: float = Field(..., ge=0.0, le=1.0, description="Relative speech pace (too fast = closer to 1.0)")
     
@@ -79,9 +79,9 @@ class FluencyOutput(BaseModel):
 
 class ProsodyOutput(BaseModel):
     #category: Literal["PROSODY"]
-    pace: float = Field(..., ge=0.0, le=1.0)
-    pauses: float = Field(..., ge=0.0, le=1.0)
-    volume_variance: float = Field(..., ge=0.0, le=1.0)
+    pace: float
+    pauses: float = Field(..., ge=0.0, le=1.0, description="Rank how much the person pauses where 0 is the person does pause every single time and 1 is the person does not pause at all.")
+    volume_variance: float = Field(..., ge=0.0, le=1.0, description="Rank how well the volume is on the scale of 0 to 1 where 0 is the person is wayy tooo quiet or loud and 1 is the person has the right volume. ")
     what_went_right: str
     what_went_wrong: str
     how_to_improve: str
@@ -94,8 +94,8 @@ class ProsodyOutput(BaseModel):
 
 class PragmaticsOutput(BaseModel):
     #category: Literal["PRAGMATICS"]
-    answered_question: float = Field(..., ge=0.0, le=1.0)
-    rambling: float = Field(..., ge=0.0, le=1.0)
+    answered_question: float = Field(..., ge=0.0, le=1.0, description="Rank how well the person has answered the question on a scale of 0 to 1 where 0 is the person did not answer the question at all and 1 is where the person completely answered the question.")
+    rambling: float = Field(..., ge=0.0, le=1.0, description="Rank the well the person was rambling on a scale of 0 to 1 where 0 is the person was rambling all the time and 1 is the person was not rambling at all.")
     what_went_right: str
     what_went_wrong: str
     how_to_improve: str
@@ -108,9 +108,9 @@ class PragmaticsOutput(BaseModel):
 
 class ConsiderationOutput(BaseModel):
     #category: Literal["CONSIDERATION"]
-    hedging: float = Field(..., ge=0.0, le=1.0)
-    acknowledgment: float = Field(..., ge=0.0, le=1.0)
-    interruptions: float = Field(..., ge=0.0, le=1.0)
+    hedging: float = Field(..., ge=0.0, le=1.0, description="Rank the hedging on a scale of 0 - 1 where 0 is where the person is hedging all the time and 1 is where the person is not hedging at all.")
+    acknowledgment: float = Field(..., ge=0.0, le=1.0, description="Rank the acknowledgement on a scale of 0 - 1 where 0 is the person is not acknowledging other people in the conversation and 1 is acknowleding other people in the conversation consistently and appropriately.")
+    interruptions: float = Field(..., ge=0.0, le=1.0, description="Rank interruption on a scale of 0 - 1 where 0 is the person is interrupting every single line and 1, the person is interrupting no lines.")
     what_went_right: str
     what_went_wrong: str
     how_to_improve: str
@@ -123,8 +123,8 @@ class ConsiderationOutput(BaseModel):
 
 class TimeBalanceOutput(BaseModel):
     #category: Literal["TIME_BALANCE"]
-    interruption_ratio: float = Field(..., ge=0.0, le=1.0)
-    speaking_share: float = Field(..., ge=0.0, le=1.0)
+    interruption_ratio: float = Field(..., ge=0.0, le=1.0, description="Rank interruption ratio on a scale of 0 - 1 where 0 is the person is interrupting every single line while the other people are not and 1, the person is interrupting no lines while the other people are.")
+    speaking_share: float = Field(..., ge=0.0, le=1.0, description="Rank the speaking share on a scale of 0 - 1 where 0 is the person is speaking all the time and 1 is where the person is not speaking at all.")
     what_went_right: str
     what_went_wrong: str
     how_to_improve: str
@@ -148,16 +148,18 @@ CATEGORY_MODELS = {
 # --- Rubric Weights ---
 RUBRIC_WEIGHTS = {
     "FLUENCY": {"filler_words":0.4, "run_ons":0.3, "wpm":0.3},
-    "PROSODY": {"pace":0.4, "pauses":0.3, "volume_variance":0.3},
+    "PROSODY": {"pace":0.5, "pauses":0.3, "volume_variance":0.2},
     "PRAGMATICS": {"answered_question":0.6, "rambling":0.4},
     "CONSIDERATION": {"hedging":0.4, "acknowledgment":0.3, "interruptions":0.3},
     "TIME_BALANCE": {"interruption_ratio":0.5, "speaking_share":0.5}
 }
 
+#total number of words / 5 
+
 # --- 1. Router Agent ---
 async def main_agent(input_text: str) -> RouterContext:
     system_prompt = (
-        "You are a router agent. Determine which sub-agent categories are relevant for the input text.\n"
+        "You are a router agent. Determine which sub-agent categories are prevalant and need to bee addressed in the input text.\n"
         "Categories:\n"
         "FLUENCY, PROSODY, PRAGMATICS, CONSIDERATION, TIME_BALANCE\n\n"
         "Each of the categories encompasses this: Detect if it fall into any category: FLUENCY: counts um/like, detects run-ons, WPM. PROSODY: pace, pauses, volume variance. PRAGMATICS: did you answer the question? did you ramble? CONSIDERATION: hedging, acknowledgment, interruptions. TIME_BALANCE: interruption ratio, speaking share."

@@ -1,5 +1,6 @@
 def prosody_agent_prompt(text):
-    return f"""
+  speed = text.split()/5
+  return f"""
 You are a Prosody sub-agent. Analyze the text and evaluate:
 
 Rubric:
@@ -13,7 +14,7 @@ Output JSON ONLY:
 
 {{
   "rubric_scores": {{
-    "pace": <score 0-1>,
+    "pace": {speed},
     "pauses": <score 0-1>,
     "volume_variance": <score 0-1>
   }},
