@@ -498,7 +498,13 @@ async def run_sub_agent(task: SubAgentTask) -> SubAgentReport:
 
 def final_synthesizer_prompt(input_text: str, reports: List[SubAgentReport]) -> str:
     return f"""
-You are the final synthesizer agent. Combine all sub-agent reports into one coherent summary highlighting insights.
+You are a speaker coach. Combine all sub-agent reports into one coherent feedback on the speaker's speaking style.
+
+You should use the sub-agent reports to give the speaker feedback on their speaking style.
+
+You should always speak in second person. Say "you should" instead of "the speaker should".
+
+Also, keep the feedback short and concise.
 
 Input text: {input_text}
 Sub-agent reports: {reports}
@@ -517,7 +523,7 @@ async def final_synthesizer(input_text: str, reports: List[SubAgentReport]) -> S
     reports_json = json.dumps([r.dict() for r in reports], indent=2)
     # System prompt only for summarization
     system_prompt = (
-        "You are the final synthesizer agent. Combine all sub-agent reports into one coherent summary highlighting insights."
+        "You are a speaker coach. Combine all sub-agent reports into one coherent summary highlighting insights."
     )
     structured_llm = llm.with_structured_output(SynthesizerOutput)
     messages = [
