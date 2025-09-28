@@ -2,3 +2,5 @@ fastapi[standard]
 pydantic
 langchain
 langchain-google-genai
+pymysql
+sqlalchemy
