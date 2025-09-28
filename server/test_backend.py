@@ -23,7 +23,7 @@ class AsyncTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_run_workflow_scores(self):
         # Test GOOD_BALANCED
         result = await run_workflow(GOOD_BALANCED)
-        self.assertGreaterEqual(result['total_score'], 0.8)
+        self.assertGreaterEqual(result['total_score'], 0.8) #monotone is sad
         self.assertLessEqual(result['total_score'], 1.0)
 
         # Test TOO_MANY_FILLERS
