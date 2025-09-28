@@ -15,7 +15,7 @@ load_dotenv(".env")
 api_key = os.getenv("GEMINI_API_KEY")
 
 # --- LLM Config ---
-MODEL_NAME = "gemini-2.5-flash-preview-05-20"
+MODEL_NAME = "gemini-2.5-flash-lite"
 llm = ChatGoogleGenerativeAI(model=MODEL_NAME, api_key=api_key)
 
 # --- Prompts (functions that accept `text`) ---

@@ -1,0 +1,2 @@
+import base64
+data = base64.b64decode("LA0ZElM2Gk4vFBcbGg1/CRMxSklGV9NFWFVBX0JcUT1/UV3vUkBIW0JxW0QI")

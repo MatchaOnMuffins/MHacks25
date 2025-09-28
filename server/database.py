@@ -5,7 +5,6 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, MetaData, T
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.exc import SQLAlchemyError
 from typing import Optional, Tuple
-import pymysql
 
 # Database configuration
 DB_HOST = os.getenv("DB_HOST", "")
