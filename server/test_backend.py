@@ -1,178 +1,274 @@
-from pydantic import BaseModel
-from typing import Any, Dict
-import re
+import unittest
+from pydantic import BaseModel, Field
+from typing import Dict
+import random
 
 # ---------------------------
-# Data Models
+# Output Models
 # ---------------------------
 
 class FluencyOutput(BaseModel):
-    lack_of_filler_words: float
-    lack_of_run_ons: float
-    words_per_minute: float
-    raw_filler_words: str
-    raw_run_ons: str
-    raw_wpm: str
+    raw_filler_words: float = Field(..., ge=0.0, le=1.0)
+    raw_run_ons: float = Field(..., ge=0.0, le=1.0)
+    raw_wpm: float = Field(..., ge=0.0, le=1.0)
+
+    what_went_right: str
+    what_went_wrong: str
+    how_to_improve: str
     prompt: str
+
+    @property
+    def filler_words(self) -> float:
+        return 1.0 - self.raw_filler_words
+
+    @property
+    def run_ons(self) -> float:
+        return 1.0 - self.raw_run_ons
+
+    @property
+    def wpm(self) -> float:
+        return 1.0 - self.raw_wpm
+
+    @property
+    def rubric_scores(self) -> Dict[str, float]:
+        return {
+            "lack_of_filler_words": self.filler_words,
+            "lack_of_run_ons": self.run_ons,
+            "good_wpm": self.wpm
+        }
+
 
 class ProsodyOutput(BaseModel):
-    good_pace: float
-    speed: float
-    pauses: float
-    volume_variance: float
-    raw_speed: str
-    raw_pace: str
-    raw_pauses: str
-    raw_volume_variance: str
+    raw_pace: float = Field(..., ge=0.0, le=1.0)
+    raw_pauses: float = Field(..., ge=0.0, le=1.0)
+    raw_volume_variance: float = Field(..., ge=0.0, le=1.0)
+    raw_speed: float = Field(..., ge=0.0, le=1.0)
+
+    what_went_right: str
+    what_went_wrong: str
+    how_to_improve: str
     prompt: str
+
+    @property
+    def pace(self) -> float:
+        return 1.0 - self.raw_pace
+
+    @property
+    def pauses(self) -> float:
+        return 1.0 - self.raw_pauses
+
+    @property
+    def volume_variance(self) -> float:
+        return 1.0 - self.raw_volume_variance
+
+    @property
+    def speed(self) -> float:
+        return 1.0 - self.raw_speed
+
+    @property
+    def rubric_scores(self) -> Dict[str, float]:
+        return {
+            "good_pace": self.speed,
+            "lack_of_pauses": self.pauses,
+            "good_volume_variance": self.volume_variance
+        }
+
 
 class PragmaticsOutput(BaseModel):
-    yes_answered_question: float
-    rambling: float
-    raw_answered_question: str
-    raw_rambling: str
+    raw_answered_question: float = Field(..., ge=0.0, le=1.0)
+    raw_rambling: float = Field(..., ge=0.0, le=1.0)
+
+    what_went_right: str
+    what_went_wrong: str
+    how_to_improve: str
     prompt: str
+
+    @property
+    def answered_question(self) -> float:
+        return self.raw_answered_question
+
+    @property
+    def rambling(self) -> float:
+        return 1.0 - self.raw_rambling
+
+    @property
+    def rubric_scores(self) -> Dict[str, float]:
+        return {
+            "yes_answered_question": self.answered_question,
+            "no_rambling": self.rambling
+        }
+
+
+class ConsiderationOutput(BaseModel):
+    raw_hedging: float = Field(..., ge=0.0, le=1.0)
+    raw_acknowledgment: float = Field(..., ge=0.0, le=1.0)
+    raw_interruptions: float = Field(..., ge=0.0, le=1.0)
+
+    what_went_right: str
+    what_went_wrong: str
+    how_to_improve: str
+    prompt: str
+
+    @property
+    def hedging(self) -> float:
+        return 1.0 - self.raw_hedging
+
+    @property
+    def acknowledgment(self) -> float:
+        return self.raw_acknowledgment
+
+    @property
+    def interruptions(self) -> float:
+        return 1.0 - self.raw_interruptions
+
+    @property
+    def rubric_scores(self) -> Dict[str, float]:
+        return {
+            "no_hedging": self.hedging,
+            "good_amount_of_acknowledgment": self.acknowledgment,
+            "no_interruptions": self.interruptions
+        }
+
 
 class TimeBalanceOutput(BaseModel):
-    good_interruption_ratio: float
-    speaking_share: float
-    raw_interruption_ratio: str
-    raw_speaking_share: str
+    raw_interruption_ratio: float = Field(..., ge=0.0, le=1.0)
+    raw_speaking_share: float = Field(..., ge=0.0, le=1.0)
+
+    what_went_right: str
+    what_went_wrong: str
+    how_to_improve: str
     prompt: str
 
-# ---------------------------
-# Helper Functions
-# ---------------------------
+    @property
+    def interruption_ratio(self) -> float:
+        return 1.0 - self.raw_interruption_ratio
 
-# Fluency helpers
-def compute_filler_score(text: str) -> tuple[float, str]:
-    fillers = re.findall(r"\b(um|uh|like|you know|so)\b", text, re.I)
-    score = max(0, 1 - len(fillers)/10)  # arbitrary scoring
-    return score, ', '.join(fillers) if fillers else "None"
+    @property
+    def speaking_share(self) -> float:
+        return 1.0 - self.raw_speaking_share
 
-def compute_runon_score(text: str) -> tuple[float, str]:
-    sentences = re.split(r'[.!?]', text)
-    runons = [s for s in sentences if len(s.split()) > 30]
-    score = max(0, 1 - len(runons)/5)
-    return score, ' | '.join(runons) if runons else "None"
+    @property
+    def rubric_scores(self) -> Dict[str, float]:
+        return {
+            "good_interruption_ratio": self.interruption_ratio,
+            "good_speaking_share": self.speaking_share
+        }
 
-def compute_wpm(text: str) -> tuple[float, str]:
-    words = len(text.split())
-    # Let's assume duration is 1 minute for simplicity
-    score = words / 150  # normalized to 1 if 150 wpm
-    return score, f"{words} words"
-
-# Prosody helpers
-def compute_speed(text: str) -> tuple[float, str]:
-    words = len(text.split())
-    speed = min(1.0, words / 200)
-    return speed, f"{words} words/min"
-
-def compute_pauses(text: str) -> tuple[float, str]:
-    pauses = len(re.findall(r'[.,;!?]', text))
-    score = max(0, 1 - pauses/20)
-    return score, f"{pauses} pauses"
-
-def compute_volume_variance(text: str) -> tuple[float, str]:
-    # Dummy metric: more punctuation = more variation
-    variance = min(1.0, len(re.findall(r'[.!?]', text)) / 10)
-    return variance, f"{variance*100:.1f}%"
-
-def compute_good_pace(text: str) -> tuple[float, str]:
-    words = len(text.split())
-    pace = max(0, 1 - abs(words - 150)/150)
-    return pace, f"{words} words considered ideal 150"
-
-# Pragmatics helpers
-def check_answered_question(text: str) -> tuple[float, str]:
-    answered = 1.0 if '?' not in text else 0.5
-    return answered, "Answered question" if answered == 1.0 else "Unclear"
-
-def check_rambling(text: str) -> tuple[float, str]:
-    sentences = text.split('.')
-    rambling_score = max(0, 1 - len(sentences)/10)
-    raw_rambling = ' | '.join(sentences) if sentences else "None"
-    return rambling_score, raw_rambling
-
-# Time balance helpers
-def compute_interruption_ratio(text: str) -> tuple[float, str]:
-    # Dummy logic
-    ratio = 0.8 if "interrupt" not in text else 0.2
-    return ratio, f"Raw ratio {'0.8' if ratio==0.8 else '0.2'}"
-
-def compute_speaking_share(text: str) -> tuple[float, str]:
-    words = len(text.split())
-    share = min(1.0, words / 200)
-    return share, f"{words} words share"
 
 # ---------------------------
-# Evaluators
+# Unit Tests
 # ---------------------------
 
-def evaluate_fluency(text: str) -> FluencyOutput:
-    filler_score, filler_text = compute_filler_score(text)
-    runon_score, runon_text = compute_runon_score(text)
-    wpm_score, wpm_text = compute_wpm(text)
-    
-    return FluencyOutput(
-        lack_of_filler_words=filler_score,
-        lack_of_run_ons=runon_score,
-        words_per_minute=wpm_score,
-        raw_filler_words=filler_text,
-        raw_run_ons=runon_text,
-        raw_wpm=wpm_text,
-        prompt=text
-    )
+class TestAgentOutputs(unittest.TestCase):
 
-def evaluate_prosody(text: str) -> ProsodyOutput:
-    speed, speed_text = compute_speed(text)
-    pauses, pauses_text = compute_pauses(text)
-    volume_variance, volume_text = compute_volume_variance(text)
-    good_pace, pace_text = compute_good_pace(text)
-    
-    return ProsodyOutput(
-        good_pace=good_pace,
-        speed=speed,
-        pauses=pauses,
-        volume_variance=volume_variance,
-        raw_speed=speed_text,
-        raw_pace=pace_text,
-        raw_pauses=pauses_text,
-        raw_volume_variance=volume_text,
-        prompt=text
-    )
+    # Example sentences for testing different ranges
+    def setUp(self):
+        self.fluency_examples = [
+            FluencyOutput(raw_filler_words=0.7, raw_run_ons=0.6, raw_wpm=0.5,
+                          what_went_right="Some filler words", what_went_wrong="Some run-ons", how_to_improve="Speak slower", prompt="Example prompt"),
+            FluencyOutput(raw_filler_words=0.3, raw_run_ons=0.4, raw_wpm=0.3,
+                          what_went_right="Few filler words", what_went_wrong="Some run-ons", how_to_improve="Pace is medium", prompt="Example prompt"),
+            FluencyOutput(raw_filler_words=0.1, raw_run_ons=0.0, raw_wpm=0.1,
+                          what_went_right="Almost perfect", what_went_wrong="Minor issue", how_to_improve="Keep up", prompt="Example prompt")
+        ]
 
-def evaluate_pragmatics(text: str) -> PragmaticsOutput:
-    answered_question, answered_text = check_answered_question(text)
-    rambling, rambling_text = check_rambling(text)
-    
-    return PragmaticsOutput(
-        yes_answered_question=answered_question,
-        rambling=rambling,
-        raw_answered_question=answered_text,
-        raw_rambling=rambling_text,
-        prompt=text
-    )
+        self.prosody_examples = [
+            ProsodyOutput(raw_pace=0.8, raw_pauses=0.7, raw_volume_variance=0.6, raw_speed=0.5,
+                          what_went_right="Bad pace", what_went_wrong="Bad pauses", how_to_improve="Adjust tone", prompt="Example"),
+            ProsodyOutput(raw_pace=0.3, raw_pauses=0.4, raw_volume_variance=0.2, raw_speed=0.3,
+                          what_went_right="Medium pace", what_went_wrong="Some variation", how_to_improve="Better", prompt="Example"),
+            ProsodyOutput(raw_pace=0.0, raw_pauses=0.1, raw_volume_variance=0.0, raw_speed=0.0,
+                          what_went_right="Excellent", what_went_wrong="", how_to_improve="", prompt="Example")
+        ]
 
-def evaluate_time_balance(text: str) -> TimeBalanceOutput:
-    interruption_ratio, interruption_text = compute_interruption_ratio(text)
-    speaking_share, share_text = compute_speaking_share(text)
-    
-    return TimeBalanceOutput(
-        good_interruption_ratio=interruption_ratio,
-        speaking_share=speaking_share,
-        raw_interruption_ratio=interruption_text,
-        raw_speaking_share=share_text,
-        prompt=text
-    )
+        self.pragmatics_examples = [
+            PragmaticsOutput(raw_answered_question=0.3, raw_rambling=0.6,
+                             what_went_right="Partially answered", what_went_wrong="Rambled some", how_to_improve="Focus answers", prompt="Example"),
+            PragmaticsOutput(raw_answered_question=0.7, raw_rambling=0.3,
+                             what_went_right="Mostly answered", what_went_wrong="Minimal rambling", how_to_improve="Keep concise", prompt="Example"),
+            PragmaticsOutput(raw_answered_question=1.0, raw_rambling=0.0,
+                             what_went_right="Perfect answer", what_went_wrong="", how_to_improve="", prompt="Example")
+        ]
 
-# ---------------------------
-# Example Usage / Test
-# ---------------------------
+        self.consideration_examples = [
+            ConsiderationOutput(raw_hedging=0.7, raw_acknowledgment=0.3, raw_interruptions=0.5,
+                                what_went_right="Some hedging", what_went_wrong="Few acknowledgments", how_to_improve="Be clear", prompt="Example"),
+            ConsiderationOutput(raw_hedging=0.3, raw_acknowledgment=0.7, raw_interruptions=0.2,
+                                what_went_right="Medium hedging", what_went_wrong="Good acknowledgment", how_to_improve="Less interruptions", prompt="Example"),
+            ConsiderationOutput(raw_hedging=0.0, raw_acknowledgment=1.0, raw_interruptions=0.0,
+                                what_went_right="No hedging", what_went_wrong="", how_to_improve="", prompt="Example")
+        ]
+
+        self.timebalance_examples = [
+            TimeBalanceOutput(raw_interruption_ratio=0.7, raw_speaking_share=0.5,
+                              what_went_right="Interrupts sometimes", what_went_wrong="Speaks too much", how_to_improve="Balance speaking", prompt="Example"),
+            TimeBalanceOutput(raw_interruption_ratio=0.3, raw_speaking_share=0.3,
+                              what_went_right="Good ratio", what_went_wrong="Moderate speaking", how_to_improve="Fine tune", prompt="Example"),
+            TimeBalanceOutput(raw_interruption_ratio=0.0, raw_speaking_share=0.1,
+                              what_went_right="Perfect ratio", what_went_wrong="", how_to_improve="", prompt="Example")
+        ]
+
+    # ---------------------------
+    # Range-based checks
+    # ---------------------------
+    def test_fluency_ranges(self):
+        for f in self.fluency_examples:
+            # filler words
+            if f.raw_filler_words > 0.6:  # bad
+                self.assertLess(f.filler_words, 0.5)
+            elif 0.2 < f.raw_filler_words < 0.6:  # medium
+                self.assertGreaterEqual(f.filler_words, 0.3)
+                self.assertLessEqual(f.filler_words, 0.7)
+            else:  # good
+                self.assertGreater(f.filler_words, 0.7)
+
+            # run-ons
+            if f.raw_run_ons > 0.6:
+                self.assertLess(f.run_ons, 0.5)
+            elif 0.2 < f.raw_run_ons < 0.6:
+                self.assertGreaterEqual(f.run_ons, 0.3)
+                self.assertLessEqual(f.run_ons, 0.7)
+            else:
+                self.assertGreater(f.run_ons, 0.7)
+
+            # wpm
+            self.assertGreaterEqual(f.wpm, 0.0)
+            self.assertLessEqual(f.wpm, 1.0)
+                        
+    def test_prosody_ranges(self):
+        for p in self.prosody_examples:
+            self.assertGreaterEqual(p.pace, 0.0)
+            self.assertLessEqual(p.pace, 1.0)
+            self.assertGreaterEqual(p.pauses, 0.0)
+            self.assertLessEqual(p.pauses, 1.0)
+            self.assertGreaterEqual(p.volume_variance, 0.0)
+            self.assertLessEqual(p.volume_variance, 1.0)
+            self.assertGreaterEqual(p.speed, 0.0)
+            self.assertLessEqual(p.speed, 1.0)
+
+    def test_pragmatics_ranges(self):
+        for pr in self.pragmatics_examples:
+            self.assertGreaterEqual(pr.answered_question, 0.0)
+            self.assertLessEqual(pr.answered_question, 1.0)
+            self.assertGreaterEqual(pr.rambling, 0.0)
+            self.assertLessEqual(pr.rambling, 1.0)
+
+    def test_consideration_ranges(self):
+        for c in self.consideration_examples:
+            self.assertGreaterEqual(c.hedging, 0.0)
+            self.assertLessEqual(c.hedging, 1.0)
+            self.assertGreaterEqual(c.acknowledgment, 0.0)
+            self.assertLessEqual(c.acknowledgment, 1.0)
+            self.assertGreaterEqual(c.interruptions, 0.0)
+            self.assertLessEqual(c.interruptions, 1.0)
+
+    def test_timebalance_ranges(self):
+        for t in self.timebalance_examples:
+            self.assertGreaterEqual(t.interruption_ratio, 0.0)
+            self.assertLessEqual(t.interruption_ratio, 1.0)
+            self.assertGreaterEqual(t.speaking_share, 0.0)
+            self.assertLessEqual(t.speaking_share, 1.0)
+
+
 if __name__ == "__main__":
-    sample_text = "Um, I think, you know, this is a sample text. It has several sentences to test the system."
-    
-    print(evaluate_fluency(sample_text))
-    print(evaluate_prosody(sample_text))
-    print(evaluate_pragmatics(sample_text))
-    print(evaluate_time_balance(sample_text))
+    unittest.main()

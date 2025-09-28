@@ -176,28 +176,44 @@ class TimeBalanceOutput(BaseModel):
         
         """
 
+from pydantic import BaseModel, Field
+from typing import Dict
+
+# ---------------------------
+# Fluency
+# ---------------------------
 class FluencyOutput(BaseModel):
-    # raw magnitude: 0 = no issue, 1 = extreme issue
-    raw_filler_words: float = Field(..., ge=0.0, le=1.0)
-    raw_run_ons: float = Field(..., ge=0.0, le=1.0)
-    raw_wpm: float = Field(..., ge=0.0, le=1.0)  # 0 = ideal, 1 = too fast/slow
+    raw_filler_words: float = Field(
+        ..., ge=0.0, le=1.0,
+        description="Fraction of filler words relative to total words (0 = none, 1 = extreme; lower is better)"
+    )
+    raw_run_ons: float = Field(
+        ..., ge=0.0, le=1.0,
+        description="Fraction of run-on sentences (0 = none, 1 = extreme; lower is better)"
+    )
+    raw_wpm: float = Field(
+        ..., ge=0.0, le=1.0,
+        description="Relative words-per-minute deviation (0 = ideal, 1 = too fast/slow; lower is better)"
+    )
 
     what_went_right: str
     what_went_wrong: str
     how_to_improve: str
     prompt: str
 
-    # normalized: 0 = bad, 1 = good
     @property
     def filler_words(self) -> float:
+        """Higher = better (less filler words)"""
         return 1.0 - self.raw_filler_words
 
     @property
     def run_ons(self) -> float:
+        """Higher = better (fewer run-ons)"""
         return 1.0 - self.raw_run_ons
 
     @property
     def wpm(self) -> float:
+        """Higher = better (closer to ideal pace)"""
         return 1.0 - self.raw_wpm
 
     @property
@@ -208,11 +224,18 @@ class FluencyOutput(BaseModel):
             "good_wpm": self.wpm
         }
 
+# ---------------------------
+# Prosody
+# ---------------------------
 class ProsodyOutput(BaseModel):
-    raw_pace: float = Field(..., ge=0.0, le=1.0)
-    raw_pauses: float = Field(..., ge=0.0, le=1.0)
-    raw_volume_variance: float = Field(..., ge=0.0, le=1.0)
-    raw_speed: float = Field(..., ge=0.0, le=1.0)
+    raw_pace: float = Field(..., ge=0.0, le=1.0,
+                            description="Speech pace deviation (0 = ideal, 1 = too fast/slow; lower is better)")
+    raw_pauses: float = Field(..., ge=0.0, le=1.0,
+                              description="Excessive pauses (0 = ideal, 1 = pauses too much; lower is better)")
+    raw_volume_variance: float = Field(..., ge=0.0, le=1.0,
+                                       description="Volume variation (0 = monotone, 1 = ideal variance; higher is better)")
+    raw_speed: float = Field(..., ge=0.0, le=1.0,
+                             description="Speech speed deviation (0 = ideal, 1 = too fast/slow; lower is better)")
 
     what_went_right: str
     what_went_wrong: str
@@ -221,19 +244,23 @@ class ProsodyOutput(BaseModel):
 
     @property
     def pace(self) -> float:
-        return 1.0 - self.raw_pace  # if pace is too fast/slow, score drops
+        """Higher = better (closer to ideal pace)"""
+        return 1.0 - self.raw_pace
 
     @property
     def pauses(self) -> float:
-        return 1.0 - self.raw_pauses  # if excessive pauses, score drops
+        """Higher = better (fewer excessive pauses)"""
+        return 1.0 - self.raw_pauses
 
     @property
     def volume_variance(self) -> float:
-        return 1.0 - self.raw_volume_variance  # low variation = bad
+        """Higher = better (more ideal volume variation)"""
+        return 1.0 - self.raw_volume_variance
 
     @property
     def speed(self) -> float:
-        return 1.0 - self.raw_speed  # too fast/slow = bad
+        """Higher = better (closer to ideal speed)"""
+        return 1.0 - self.raw_speed
 
     @property
     def rubric_scores(self) -> Dict[str, float]:
@@ -243,9 +270,14 @@ class ProsodyOutput(BaseModel):
             "good_volume_variance": self.volume_variance
         }
 
+# ---------------------------
+# Pragmatics
+# ---------------------------
 class PragmaticsOutput(BaseModel):
-    raw_answered_question: float = Field(..., ge=0.0, le=1.0)  # 0 = no answer, 1 = fully answered
-    raw_rambling: float = Field(..., ge=0.0, le=1.0)           # 0 = rambling, 1 = concise
+    raw_answered_question: float = Field(..., ge=0.0, le=1.0,
+                                         description="How fully the question was answered (0 = not at all, 1 = fully answered; higher is better)")
+    raw_rambling: float = Field(..., ge=0.0, le=1.0,
+                                description="Amount of rambling (0 = rambled constantly, 1 = concise; higher is better)")
 
     what_went_right: str
     what_went_wrong: str
@@ -254,11 +286,12 @@ class PragmaticsOutput(BaseModel):
 
     @property
     def answered_question(self) -> float:
-        return self.raw_answered_question  # already good = high
+        return self.raw_answered_question  # Higher = better
 
     @property
     def rambling(self) -> float:
-        return 1.0 - self.raw_rambling    # raw rambling = bad, invert
+        """Higher = better (less rambling)"""
+        return 1.0 - self.raw_rambling
 
     @property
     def rubric_scores(self) -> Dict[str, float]:
@@ -267,10 +300,16 @@ class PragmaticsOutput(BaseModel):
             "no_rambling": self.rambling
         }
 
+# ---------------------------
+# Consideration
+# ---------------------------
 class ConsiderationOutput(BaseModel):
-    raw_hedging: float = Field(..., ge=0.0, le=1.0)
-    raw_acknowledgment: float = Field(..., ge=0.0, le=1.0)
-    raw_interruptions: float = Field(..., ge=0.0, le=1.0)
+    raw_hedging: float = Field(..., ge=0.0, le=1.0,
+                               description="Amount of hedging (0 = none, 1 = excessive; lower is better)")
+    raw_acknowledgment: float = Field(..., ge=0.0, le=1.0,
+                                      description="Frequency of acknowledgment (0 = none, 1 = frequent; higher is better)")
+    raw_interruptions: float = Field(..., ge=0.0, le=1.0,
+                                     description="Fraction of interruptions (0 = never interrupts, 1 = frequent; lower is better)")
 
     what_went_right: str
     what_went_wrong: str
@@ -279,14 +318,17 @@ class ConsiderationOutput(BaseModel):
 
     @property
     def hedging(self) -> float:
+        """Higher = better (less hedging)"""
         return 1.0 - self.raw_hedging
 
     @property
     def acknowledgment(self) -> float:
+        """Higher = better (more acknowledgment)"""
         return self.raw_acknowledgment
 
     @property
     def interruptions(self) -> float:
+        """Higher = better (fewer interruptions)"""
         return 1.0 - self.raw_interruptions
 
     @property
@@ -297,10 +339,14 @@ class ConsiderationOutput(BaseModel):
             "no_interruptions": self.interruptions
         }
 
-
+# ---------------------------
+# Time Balance
+# ---------------------------
 class TimeBalanceOutput(BaseModel):
-    raw_interruption_ratio: float = Field(..., ge=0.0, le=1.0)
-    raw_speaking_share: float = Field(..., ge=0.0, le=1.0)
+    raw_interruption_ratio: float = Field(..., ge=0.0, le=1.0,
+                                          description="Frequency of interrupting others (0 = never interrupts, 1 = frequent; lower is better)")
+    raw_speaking_share: float = Field(..., ge=0.0, le=1.0,
+                                      description="Fraction of speaking time (0 = ideal, 1 = dominates; lower is better)")
 
     what_went_right: str
     what_went_wrong: str
@@ -309,11 +355,13 @@ class TimeBalanceOutput(BaseModel):
 
     @property
     def interruption_ratio(self) -> float:
-        return 1.0 - self.raw_interruption_ratio  # high ratio = bad
+        """Higher = better (less interrupting)"""
+        return 1.0 - self.raw_interruption_ratio
 
     @property
     def speaking_share(self) -> float:
-        return 1.0 - self.raw_speaking_share      # dominating speaker = bad
+        """Higher = better (balanced speaking share)"""
+        return 1.0 - self.raw_speaking_share
 
     @property
     def rubric_scores(self) -> Dict[str, float]:
@@ -321,6 +369,7 @@ class TimeBalanceOutput(BaseModel):
             "good_interruption_ratio": self.interruption_ratio,
             "good_speaking_share": self.speaking_share
         }
+
 
 # --- Map categories to models ---
 CATEGORY_MODELS = {
