@@ -6,6 +6,7 @@ from datetime import datetime
 class TextUploadRequest(BaseModel):
     """Request model for text upload endpoint"""
     text: str = Field(..., min_length=1, description="Text content to process")
+    secret_key: str = Field(..., description="Secret key to authenticate the request")
 
 
 class ImageUploadResponse(BaseModel):

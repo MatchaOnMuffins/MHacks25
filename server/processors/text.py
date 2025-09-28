@@ -1,6 +1,8 @@
 from database import add_entry
+from backend import run_workflow
 
-def process_text(text: str):
+async def process_text(text: str):
     print(text)
-    add_entry(text)
-    pass
+    result = await run_workflow(text)
+    print(result["final_answer"])
+    add_entry(result["final_answer"])
