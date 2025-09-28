@@ -1,8 +1,7 @@
 ## Demo Video
 
-## Demo Video
+[![Watch the video](https://img.youtube.com/vi/YTZotjnA4ok/0.jpg)](https://youtu.be/YTZotjnA4ok?si=BEeWYUDEjCeksEOD)
 
-[![Watch the video](https://img.youtube.com/vi/YOUR_VIDEO_ID/0.jpg)](https://youtu.be/YTZotjnA4ok?si=BEeWYUDEjCeksEOD)
 
 
 # Getting Started with Create React App
