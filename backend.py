@@ -246,14 +246,14 @@ async def run_workflow(input_text: str):
     final_summary = await final_synthesizer(input_text, reports)
     return {"sub_agent_reports":[r.dict() for r in reports], "final_answer": final_summary.summary}
 
-# --- 5. Example Usage ---
+# --- 5. EX Usage ---
 async def main():
     input_text = "ummm I like I am so nervous, I will interrupt you. Other person: I like to eat, Me: Shut up!"
     result = await run_workflow(input_text)
     print("--- Sub-Agent Reports ---")
-    print(json.dumps(result["sub_agent_reports"], indent=2))
-    print("\n--- Final Answer ---")
-    print(result["final_answer"])
+    print(json.dumps(result["sub_agent_reports"], indent=2)) #JSON of all the sub agents reports 
+    print("\n--- Final Answer ---") 
+    print(result["final_answer"]) #inCludes the summary
 
 if __name__ == "__main__":
     asyncio.run(main())
