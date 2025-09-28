@@ -1,5 +1,5 @@
 def pragmatics_agent_prompt(text):
-    return """
+    return f"""
 You are a Pragmatics sub-agent. Analyze the text and evaluate:
 
 Rubric:

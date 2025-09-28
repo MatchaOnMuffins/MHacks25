@@ -18,6 +18,9 @@ api_key = os.getenv("GEMINI_API_KEY")
 MODEL_NAME = "gemini-2.5-flash-lite"
 llm = ChatGoogleGenerativeAI(model=MODEL_NAME, api_key=api_key)
 
+MODEL_NAME_ROUTER = "gemini-2.5-flash"
+llm_high = ChatGoogleGenerativeAI(model=MODEL_NAME_ROUTER, api_key=api_key)
+
 # --- Prompts (functions that accept `text`) ---
 from prompts.fluency_agent_prompt import fluency_agent_prompt
 from prompts.prosody_agent_prompt import prosody_agent_prompt
@@ -59,7 +62,7 @@ class SubAgentReport(BaseModel):
 
 class SynthesizerOutput(BaseModel):
     summary: str
-    total_score: int
+    total_score: float
 
 def ideal_score(value: float, ideal_min: float, ideal_max: float) -> float:
     """
@@ -340,6 +343,37 @@ RUBRIC_WEIGHTS = {
 
 #total number of words / 5 
 
+
+def router_agent_prompt(input_text: str):
+    return f"""
+You are a router agent. Your task is to generate a workflow that calls all five categories of analysis, prioritizing them based on their prevalence in the input. For example, if the input text contains many filler words like um or uh, give FLUENCY the highest priority but still include the other categories in the workflow.
+
+Categories and definitions:
+	•	FLUENCY: counts “um/like,” detects run-ons, words per minute (WPM).
+	•	PROSODY: pace, pauses, volume variance.
+	•	PRAGMATICS: checks if the question was answered, or if the response rambled.
+	•	CONSIDERATION: hedging, acknowledgment, interruptions.
+	•	TIME_BALANCE: interruption ratio, speaking share.
+
+Output requirements:
+	•	Return JSON matching the RouterContext schema.
+	•	The JSON must include a field subagents_to_call, which is a list of objects.
+	•	Each object should have:
+	•	"category": one of the five categories above.
+	•	"text_to_analyze": the relevant portion of the input text.
+
+Rules:
+	•	If you cannot provide any meaningful analysis, return an empty list.
+	•	Only return categories if they apply.
+	•	Always rank categories by prevalence in the input.
+    •	Be as concise as possible. Be specific and to the point.
+    •	If the input text only contains something like "transcribing...", return an empty list.
+
+Input text:
+
+{input_text}
+"""
+
 # --- 1. Router Agent ---
 async def main_agent(input_text: str) -> RouterContext:
     system_prompt = (
@@ -350,8 +384,10 @@ async def main_agent(input_text: str) -> RouterContext:
         "Return JSON matching the RouterContext schema with 'subagents_to_call', each having 'category' and 'text_to_analyze'."
     )
 
+    human_prompt = router_agent_prompt(input_text)
+
     structured_llm = llm.with_structured_output(RouterContext)
-    messages = [SystemMessage(content=system_prompt), HumanMessage(content=input_text)]
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)]
 
     try:
         router_context: RouterContext = await structured_llm.ainvoke(messages)
@@ -410,6 +446,22 @@ async def run_sub_agent(task: SubAgentTask) -> SubAgentReport:
             how_to_improve="Retry or adjust prompt/input"
         )
 
+
+def final_synthesizer_prompt(input_text: str, reports: List[SubAgentReport]) -> str:
+    return f"""
+You are the final synthesizer agent. Combine all sub-agent reports into one coherent summary highlighting insights.
+
+Input text: {input_text}
+Sub-agent reports: {reports}
+
+If the sub-agent reports are empty, return "No analysis", and only no analysis, and return 0.0 for the total score.
+
+if the input text only contains something like "transcribing...", or is extremely short, 
+return "No analysis", and only no analysis, and return 0.0 for the total score.
+
+otherwise, return the total score, and perform a brief analysis of the input text and the sub-agent reports.
+"""
+
 # --- 3. Final Synthesizer ---
 async def final_synthesizer(input_text: str, reports: List[SubAgentReport]) -> SynthesizerOutput:
     # Prepare JSON for LLM context
@@ -421,7 +473,7 @@ async def final_synthesizer(input_text: str, reports: List[SubAgentReport]) -> S
     structured_llm = llm.with_structured_output(SynthesizerOutput)
     messages = [
         SystemMessage(content=system_prompt),
-        HumanMessage(content=f"Input:\n{input_text}\n\nSub-agent reports:\n{reports_json}")
+        HumanMessage(content=final_synthesizer_prompt(input_text, reports))
     ]
     try:
         # Let Gemini create the summary ONLY
