@@ -78,8 +78,8 @@ def ideal_score(value: float, ideal_min: float, ideal_max: float) -> float:
 
 # Fluency
 """class FluencyOutput(BaseModel):
-    filler_words: float = Field(..., ge=0.0, le=1.0, description="Fraction of filler words relative to total words (lower is better)")
-    run_ons: float = Field(..., ge=0.0, le=1.0, description="Fraction of run-on sentences (lower is better)")
+    no_filler_words: float = Field(..., ge=0.0, le=1.0, description="Fraction of filler words relative to total words (lower is better)")
+    no_run_ons: float = Field(..., ge=0.0, le=1.0, description="Fraction of run-on sentences (lower is better)")
     wpm: float = Field(..., ge=0.0, le=1.0, description="Relative speech pace: 0 = too slow, 1 = too fast")
 
     what_went_right: str
@@ -200,9 +200,9 @@ class FluencyOutput(BaseModel):
     @property
     def rubric_scores(self) -> Dict[str, float]:
         return {
-            "filler_words": self.filler_words,
-            "run_ons": self.run_ons,
-            "wpm": self.wpm
+            "lack_of_filler_words": self.filler_words,
+            "lack_of_run_ons": self.run_ons,
+            "good_wpm": self.wpm
         }
 
 class ProsodyOutput(BaseModel):
@@ -235,10 +235,9 @@ class ProsodyOutput(BaseModel):
     @property
     def rubric_scores(self) -> Dict[str, float]:
         return {
-            "pace": self.pace,
-            "pauses": self.pauses,
-            "volume_variance": self.volume_variance,
-            "speed": self.speed
+            "good_pace": self.speed,
+            "lack_of_pauses": self.pauses,
+            "good_volume_variance": self.volume_variance
         }
 
 class PragmaticsOutput(BaseModel):
@@ -261,8 +260,8 @@ class PragmaticsOutput(BaseModel):
     @property
     def rubric_scores(self) -> Dict[str, float]:
         return {
-            "answered_question": self.answered_question,
-            "rambling": self.rambling
+            "yes_answered_question": self.answered_question,
+            "no_rambling": self.rambling
         }
 
 class ConsiderationOutput(BaseModel):
@@ -290,9 +289,9 @@ class ConsiderationOutput(BaseModel):
     @property
     def rubric_scores(self) -> Dict[str, float]:
         return {
-            "hedging": self.hedging,
-            "acknowledgment": self.acknowledgment,
-            "interruptions": self.interruptions
+            "no_hedging": self.hedging,
+            "good_amount_of_acknowledgment": self.acknowledgment,
+            "no_interruptions": self.interruptions
         }
 
 
@@ -316,8 +315,8 @@ class TimeBalanceOutput(BaseModel):
     @property
     def rubric_scores(self) -> Dict[str, float]:
         return {
-            "interruption_ratio": self.interruption_ratio,
-            "speaking_share": self.speaking_share
+            "good_interruption_ratio": self.interruption_ratio,
+            "good_speaking_share": self.speaking_share
         }
 
 # --- Map categories to models ---
@@ -332,11 +331,11 @@ CATEGORY_MODELS = {
 
 # --- Rubric Weights ---
 RUBRIC_WEIGHTS = {
-    "FLUENCY": {"filler_words":0.4, "run_ons":0.3, "wpm":0.3},
-    "PROSODY": {"pace":0.5, "pauses":0.3, "volume_variance":0.2},
-    "PRAGMATICS": {"answered_question":0.6, "rambling":0.4},
-    "CONSIDERATION": {"hedging":0.4, "acknowledgment":0.3, "interruptions":0.3},
-    "TIME_BALANCE": {"interruption_ratio":0.5, "speaking_share":0.5}
+    "FLUENCY": {"lack_of_filler_words":0.4, "lack_of_run_ons":0.3, "good_wpm":0.3},
+    "PROSODY": {"god_pace":0.5, "lack_of_pauses":0.3, "good_volume_variance":0.2},
+    "PRAGMATICS": {"yes_answered_question":0.6, "no_rambling":0.4},
+    "CONSIDERATION": {"no_hedging":0.4, "good_amount_of_acknowledgment":0.3, "no_interruptions":0.3},
+    "TIME_BALANCE": {"good_interruption_ratio":0.5, "good_speaking_share":0.5}
 }
 
 #total number of words / 5 
