@@ -280,7 +280,8 @@ async def report_feedback():
 
         return ReportFeedbackResponse(
             message=recent_feedback[0],
-            last_updated=int(recent_feedback[1])
+            last_updated=int(recent_feedback[1]),
+            details=recent_feedback[2]
         )
     except Exception as e:
         raise HTTPException(
