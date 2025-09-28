@@ -3,7 +3,7 @@ import time
 from database import add_entry
 from backend import run_workflow
 
-async def process_text(text: str):
+async def process_text(text: str, timestamp: int):
     print(text)
     starting_time = int(time.time())
     result = await run_workflow(text)
