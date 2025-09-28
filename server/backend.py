@@ -226,20 +226,32 @@ async def run_sub_agent(task: SubAgentTask) -> SubAgentReport:
 
 # --- 3. Final Synthesizer ---
 async def final_synthesizer(input_text: str, reports: List[SubAgentReport]) -> SynthesizerOutput:
+    # Prepare JSON for LLM context
     reports_json = json.dumps([r.dict() for r in reports], indent=2)
-    system_prompt = "You are the final synthesizer agent. Combine all sub-agent reports into one coherent summary highlighting insights. Also give the average of all the scores."
-
+    # System prompt only for summarization
+    system_prompt = (
+        "You are the final synthesizer agent. Combine all sub-agent reports into one coherent summary highlighting insights."
+    )
     structured_llm = llm.with_structured_output(SynthesizerOutput)
-    messages = [SystemMessage(content=system_prompt),
-                HumanMessage(content=f"Input:\n{input_text}\n\nSub-agent reports:\n{reports_json}")]
-
+    messages = [
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=f"Input:\n{input_text}\n\nSub-agent reports:\n{reports_json}")
+    ]
     try:
+        # Let Gemini create the summary ONLY
         output: SynthesizerOutput = await structured_llm.ainvoke(messages)
+        # Compute average score locally
+        if reports:
+            total_score = sum(r.score for r in reports) / len(reports)
+        else:
+            total_score = 0.0
+        # Assign the local total_score
+        output.total_score = round(2,total_score)
         return output
     except ValidationError as e:
         print("Synthesizer parsing error:", e)
         return SynthesizerOutput(summary="Failed to synthesize final answer.", total_score=0.0)
-
+    
 # --- 4. Workflow ---
 async def run_workflow(input_text: str):
     router_context = await main_agent(input_text)
@@ -261,6 +273,7 @@ async def main():
     print(json.dumps(result["sub_agent_reports"], indent=2)) #JSON of all the sub agents reports 
     print("\n--- Final Answer ---") 
     print(result["final_answer"]) #inCludes the summary
+    print(result)
 
 if __name__ == "__main__":
     asyncio.run(main())
