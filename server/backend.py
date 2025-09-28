@@ -246,7 +246,7 @@ async def final_synthesizer(input_text: str, reports: List[SubAgentReport]) -> S
         else:
             total_score = 0.0
         # Assign the local total_score
-        output.total_score = round(2,total_score)
+        output.total_score = round(total_score,2)
         return output
     except ValidationError as e:
         print("Synthesizer parsing error:", e)
