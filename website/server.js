@@ -24,7 +24,7 @@ module.exports = pool;
 app.get("/api/feedback", async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT * FROM feedback ORDER BY timestamp DESC"
+      "SELECT * FROM feedback ORDER BY timestamp DESC LIMIT 100"
     );
     
     // Map to UI-friendly format
