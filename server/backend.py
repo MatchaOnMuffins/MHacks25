@@ -61,27 +61,46 @@ class SynthesizerOutput(BaseModel):
     summary: str
     total_score: int
 
+def ideal_score(value: float, ideal_min: float, ideal_max: float) -> float:
+    """
+    Normalize so that values inside [ideal_min, ideal_max] = 1.0,
+    and fall off toward 0.0 the further they are outside that range.
+    """
+    if ideal_min <= value <= ideal_max:
+        return 1.0
+    # compute distance from nearest bound
+    if value < ideal_min:
+        diff = ideal_min - value
+    else:
+        diff = value - ideal_max
+    # decay: every 0.3 away drops ~1 point
+    return max(0.0, 1.0 - diff / 0.3)
+
+# Fluency
 class FluencyOutput(BaseModel):
-    filler_words: float = Field(..., ge=0.0, le=1.0, description="Magnitude of filler words like 'um', 'uh', 'like' in comparision to how many words are in the text")
-    run_ons: float = Field(..., ge=0.0, le=1.0, description="Magnitude of run-on sentences or lack of clarity")
-    wpm: float = Field(..., ge=0.0, le=1.0, description="Relative speech pace (too fast = closer to 1.0)")
-    
-    what_went_right: str = Field(..., description="Positive aspects of fluency")
-    what_went_wrong: str = Field(..., description="Fluency issues detected")
-    how_to_improve: str = Field(..., description="Guidance for improving fluency")
-    
-    prompt: str = Field(..., description="Prompt given to the model for context")
+    filler_words: float = Field(..., ge=0.0, le=1.0, description="Fraction of filler words relative to total words (lower is better)")
+    run_ons: float = Field(..., ge=0.0, le=1.0, description="Fraction of run-on sentences (lower is better)")
+    raw_wpm: float = Field(..., ge=0.0, le=1.0, description="Relative speech pace: 0 = too slow, 1 = too fast")
+
+    what_went_right: str
+    what_went_wrong: str
+    how_to_improve: str
+    prompt: str
 
     @property
     def rubric_scores(self) -> Dict[str, float]:
-        return {"filler_words": self.filler_words, "run_ons": self.run_ons, "wpm": self.wpm}
+        return {
+            "filler_words": 1.0 - self.filler_words,
+            "run_ons": 1.0 - self.run_ons,
+            "wpm": ideal_score(self.raw_wpm, ideal_min=0.4, ideal_max=0.6),
+        }
 
-
+# Prosody
 class ProsodyOutput(BaseModel):
-    #category: Literal["PROSODY"]
-    pace: float
-    pauses: float = Field(..., ge=0.0, le=1.0, description="Rank how much the person pauses where 0 is the person does pause every single time and 1 is the person does not pause at all.")
-    volume_variance: float = Field(..., ge=0.0, le=1.0, description="Rank how well the volume is on the scale of 0 to 1 where 0 is the person is wayy tooo quiet or loud and 1 is the person has the right volume. ")
+    raw_pace: float = Field(..., ge=0.0, le=1.0, description="0 = very slow, 1 = excessively fast")
+    raw_pauses: float = Field(..., ge=0.0, le=1.0, description="0 = pauses excessively, 1 = no pausing at all")
+    volume_variance: float = Field(..., ge=0.0, le=1.0, description="0 = monotone/disruptive, 1 = ideal variation")
+
     what_went_right: str
     what_went_wrong: str
     how_to_improve: str
@@ -89,13 +108,18 @@ class ProsodyOutput(BaseModel):
 
     @property
     def rubric_scores(self) -> Dict[str, float]:
-        return {"pace": self.pace, "pauses": self.pauses, "volume_variance": self.volume_variance}
+        return {
+            "pace": ideal_score(self.raw_pace, ideal_min=0.4, ideal_max=0.6),
+            "pauses": ideal_score(self.raw_pauses, ideal_min=0.4, ideal_max=0.6),
+            "volume_variance": self.volume_variance,
+        }
 
 
+# Pragmatics
 class PragmaticsOutput(BaseModel):
-    #category: Literal["PRAGMATICS"]
-    answered_question: float = Field(..., ge=0.0, le=1.0, description="Rank how well the person has answered the question on a scale of 0 to 1 where 0 is the person did not answer the question at all and 1 is where the person completely answered the question.")
-    rambling: float = Field(..., ge=0.0, le=1.0, description="Rank the well the person was rambling on a scale of 0 to 1 where 0 is the person was rambling all the time and 1 is the person was not rambling at all.")
+    answered_question: float = Field(..., ge=0.0, le=1.0, description="0 = didn’t answer at all, 1 = fully answered")
+    rambling: float = Field(..., ge=0.0, le=1.0, description="0 = rambled constantly, 1 = no rambling")
+
     what_went_right: str
     what_went_wrong: str
     how_to_improve: str
@@ -103,14 +127,18 @@ class PragmaticsOutput(BaseModel):
 
     @property
     def rubric_scores(self) -> Dict[str, float]:
-        return {"answered_question": self.answered_question, "rambling": self.rambling}
+        return {
+            "answered_question": self.answered_question,  # already ideal=1
+            "rambling": self.rambling,                  # already ideal=1
+        }
 
 
+# Consideration
 class ConsiderationOutput(BaseModel):
-    #category: Literal["CONSIDERATION"]
-    hedging: float = Field(..., ge=0.0, le=1.0, description="Rank the hedging on a scale of 0 - 1 where 0 is where the person is hedging all the time and 1 is where the person is not hedging at all.")
-    acknowledgment: float = Field(..., ge=0.0, le=1.0, description="Rank the acknowledgement on a scale of 0 - 1 where 0 is the person is not acknowledging other people in the conversation and 1 is acknowleding other people in the conversation consistently and appropriately.")
-    interruptions: float = Field(..., ge=0.0, le=1.0, description="Rank interruption on a scale of 0 - 1 where 0 is the person is interrupting every single line and 1, the person is interrupting no lines.")
+    hedging: float = Field(..., ge=0.0, le=1.0, description="0 = hedging all the time, 1 = no hedging")
+    acknowledgment: float = Field(..., ge=0.0, le=1.0, description="0 = no acknowledgment, 1 = frequent acknowledgment")
+    interruptions: float = Field(..., ge=0.0, le=1.0, description="Fraction of interruptions (lower is better)")
+
     what_went_right: str
     what_went_wrong: str
     how_to_improve: str
@@ -118,13 +146,18 @@ class ConsiderationOutput(BaseModel):
 
     @property
     def rubric_scores(self) -> Dict[str, float]:
-        return {"hedging": self.hedging, "acknowledgment": self.acknowledgment, "interruptions": self.interruptions}
+        return {
+            "hedging": self.hedging,
+            "acknowledgment": self.acknowledgment,
+            "interruptions": 1.0 - self.interruptions,  # fewer interruptions = closer to 1
+        }
 
 
+# Time Balance
 class TimeBalanceOutput(BaseModel):
-    #category: Literal["TIME_BALANCE"]
-    interruption_ratio: float = Field(..., ge=0.0, le=1.0, description="Rank interruption ratio on a scale of 0 - 1 where 0 is the person is interrupting every single line while the other people are not and 1, the person is interrupting no lines while the other people are.")
-    speaking_share: float = Field(..., ge=0.0, le=1.0, description="Rank the speaking share on a scale of 0 - 1 where 0 is the person is speaking all the time and 1 is where the person is not speaking at all.")
+    raw_interruption_ratio: float = Field(..., ge=0.0, le=1.0, description="0 = always interrupts, 1 = never interrupts")
+    raw_speaking_share: float = Field(..., ge=0.0, le=1.0, description="0 = hogs all talk time, 1 = never speaks")
+
     what_went_right: str
     what_went_wrong: str
     how_to_improve: str
@@ -132,9 +165,11 @@ class TimeBalanceOutput(BaseModel):
 
     @property
     def rubric_scores(self) -> Dict[str, float]:
-        return {"interruption_ratio": self.interruption_ratio, "speaking_share": self.speaking_share}
-
-
+        return {
+            "interruption_ratio": self.raw_interruption_ratio,  # already 1 = ideal
+            "speaking_share": ideal_score(self.raw_speaking_share, ideal_min=0.4, ideal_max=0.6),
+        }
+        
 # --- Map categories to models ---
 CATEGORY_MODELS = {
     "FLUENCY": FluencyOutput,
