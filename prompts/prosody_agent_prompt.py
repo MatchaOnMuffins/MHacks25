@@ -1,5 +1,5 @@
 def prosody_agent_prompt(text):
-    prosody_agent_prompt = f"""
+    return f"""
 You are a Prosody sub-agent. Analyze the text and evaluate:
 
 Rubric:

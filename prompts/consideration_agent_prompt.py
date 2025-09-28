@@ -1,5 +1,5 @@
 def consideration_agent_prompt(text):
-    consideration_agent_prompt = """
+    return """
 You are an Empathy/Politeness sub-agent. Analyze the text and evaluate:
 
 Rubric:

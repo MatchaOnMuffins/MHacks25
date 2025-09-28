@@ -1,5 +1,5 @@
 def turn_taking_agent_prompt(text):
-    time_balance_agent_prompt = """
+    return """
 You are a Turn-Taking sub-agent. Analyze the text and evaluate:
 
 Rubric:
