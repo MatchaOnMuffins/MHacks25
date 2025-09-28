@@ -1,6 +1,7 @@
 import os
 import time
 from contextlib import contextmanager
+import urllib
 from sqlalchemy import create_engine, Column, Integer, String, Text, MetaData, Table
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.exc import SQLAlchemyError
@@ -13,8 +14,10 @@ DB_NAME = os.getenv("DB_NAME", "feedback_db")
 DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 
+encoded_password = urllib.parse.quote_plus(DB_PASSWORD)
+
 # Create database URL
-DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DATABASE_URL = f"mysql+pymysql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 # Create SQLAlchemy engine with connection timeout settings
 engine = create_engine(
