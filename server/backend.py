@@ -245,12 +245,17 @@ async def run_workflow(input_text: str):
     router_context = await main_agent(input_text)
     sub_agent_tasks = [run_sub_agent(task) for task in router_context.subagents_to_call]
     reports = await asyncio.gather(*sub_agent_tasks)
-    final_summary, total_score = await final_synthesizer(input_text, reports)
-    return {"sub_agent_reports":[r.dict() for r in reports], "final_answer": final_summary.summary, "total_score": total_score}
+    final_summary = await final_synthesizer(input_text, reports)
+    return {
+        "sub_agent_reports": [r.dict() for r in reports],
+        "final_answer": final_summary.summary,
+        "total_score": final_summary.total_score
+    }
 
 # --- 5. EX Usage ---
 async def main():
-    input_text = "ummm I like I am so nervous, I will interrupt you. Other person: I like to eat, Me: Shut up!"
+    #input_text = "ummm I like I am so nervous, I will interrupt you. Other person: I like to eat, Me: Shut up!"
+    input_text = "“Hey, um, do you have any plans for the weekend? Not really, I was thinking maybe we could, like, go hiking or something. Hmm, I don’t know, I’ve been super busy. Maybe we could just, um, watch a movie instead? Yeah, that sounds good! We could, like, order pizza too. Perfect! Should we invite anyone else, or just us? Just us, I think. It’ll be more chill that way. Alright, cool. I’ll bring the snacks!”"
     result = await run_workflow(input_text)
     print("--- Sub-Agent Reports ---")
     print(json.dumps(result["sub_agent_reports"], indent=2)) #JSON of all the sub agents reports 
