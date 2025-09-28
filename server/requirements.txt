@@ -6,3 +6,5 @@ pymysql
 sqlalchemy
 deepgram-sdk
 python-dotenv
+uagents==0.22.3
+uagents-adapter==0.4.1
