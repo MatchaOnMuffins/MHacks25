@@ -10,5 +10,5 @@ async def process_text(text: str, timestamp: int):
     print(result["final_answer"])
     time_taken = int(time.time()) - starting_time
     print(f"Time taken: {time_taken} seconds")
-    add_entry(result["final_answer"], json.dumps(result["sub_agent_reports"], indent=2), time_taken)
+    add_entry(result["final_answer"], json.dumps(result["sub_agent_reports"], indent=2), time_taken, text)
     

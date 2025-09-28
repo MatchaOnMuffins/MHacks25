@@ -47,6 +47,7 @@ class Feedback(Base):
     feedback = Column(Text, nullable=False)
     timestamp = Column(Integer, nullable=False)
     time_taken = Column(Integer, nullable=True)
+    transcript = Column(Text, nullable=True)
 
 def init_database():
     """Initialize the database and create the feedback table if it doesn't exist"""
@@ -76,13 +77,14 @@ def get_db_connection():
     finally:
         session.close()
 
-def add_entry(feedback_text: str, intermediate_feedbacks: str = None, time_taken: int = None) -> int:
+def add_entry(feedback_text: str, intermediate_feedbacks: str = None, time_taken: int = None, transcript: str = None) -> int:
     """Add a new entry to the database"""
     try:
         with get_db_connection() as session:
             feedback_entry = Feedback(
                 feedback=feedback_text,
                 intermediate_feedbacks=intermediate_feedbacks,
+                transcript=transcript,
                 timestamp=int(time.time()),
                 time_taken=time_taken
             )
@@ -105,7 +107,7 @@ def get_most_recent_entry() -> Optional[Tuple[str, int, str, int]]:
             if feedback_entry is None:
                 return None
             
-            return (feedback_entry.feedback, feedback_entry.timestamp, feedback_entry.intermediate_feedbacks, feedback_entry.time_taken)
+            return (feedback_entry.feedback, feedback_entry.timestamp, feedback_entry.intermediate_feedbacks, feedback_entry.time_taken, feedback_entry.transcript)
     except SQLAlchemyError as e:
         print(f"Error getting most recent entry: {e}")
         raise

@@ -42,3 +42,14 @@ class ReportFeedbackResponse(BaseModel):
     """Response model for feedback report endpoint"""
     message: str
     last_updated: int 
+
+class VoiceUploadRequest(BaseModel):
+    """Request model for voice upload endpoint"""
+    voice: str = Field(..., description="Voice content to process")
+    secret_key: str = Field(..., description="Secret key to authenticate the request")
+    timestamp: int = Field(..., description="Timestamp of the request")
+
+class VoiceUploadResponse(BaseModel):
+    """Response model for voice upload endpoint"""
+    message: str
+    processed_at: datetime = Field(default_factory=datetime.now)

@@ -24,6 +24,8 @@ from models import (
     ImageUploadResponse, 
     ErrorResponse,
     ReportFeedbackResponse,
+    VoiceUploadRequest,
+    VoiceUploadResponse,
 )
 
 app = FastAPI(
@@ -107,6 +109,29 @@ async def upload_text(request: TextUploadRequest):
                 error=str(e)
             ).model_dump()
         )
+
+
+@app.post("/upload/voice", response_model=VoiceUploadResponse)
+async def upload_voice(request: VoiceUploadRequest):
+    """
+    Upload and process voice files.
+    """
+
+    authenticate_request(request.secret_key)
+    try:
+        asyncio.create_task(processors.process_voice(request.voice, request.timestamp))
+        return VoiceUploadResponse(
+            message="Voice uploaded successfully",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                message="Error processing voice",
+                error=str(e)
+            ).model_dump()
+        )
+
 
 @app.post("/upload/image", response_model=ImageUploadResponse)
 async def upload_image(image: UploadFile = File(...), secret_key: str = Query(...)):
