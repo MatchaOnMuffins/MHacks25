@@ -194,7 +194,7 @@ RUBRIC_WEIGHTS = {
 # --- 1. Router Agent ---
 async def main_agent(input_text: str) -> RouterContext:
     system_prompt = (
-        "You are a router agent. Classify which sub-agent categories apply to the input text given the description of each category \n"
+        "You are a router agent. Genenerate a workflow calling to each of the following agents, where agents are given priority based on what you see as the most prevalance. For example, if I see a lot of ums and uhs, I would give priority to FLUENCY first but I would also add the other agents to my workflow. \n"
         "Categories:\n"
         "FLUENCY, PROSODY, PRAGMATICS, CONSIDERATION, TIME_BALANCE\n\n"
         "Each of the categories encompasses this: Detect if it fall into any category: FLUENCY: counts um/like, detects run-ons, WPM. PROSODY: pace, pauses, volume variance. PRAGMATICS: did you answer the question? did you ramble? CONSIDERATION: hedging, acknowledgment, interruptions. TIME_BALANCE: interruption ratio, speaking share."
